@@ -1,5 +1,6 @@
 package edu.gatech.cs7641.assignment3.assets;
 
+import java.util.List;
 import java.util.Random;
 
 import burlap.oomdp.auxiliary.DomainGenerator;
@@ -29,21 +30,31 @@ public class AssetDomain implements DomainGenerator {
 	private static final String CASH = "cash";
 
 	public class HoldingAssetPF extends PropositionalFunction {
-	
+
 		private int assetIndex;
-	
+
 		public HoldingAssetPF(String name, Domain domain,
 				String[] parameterClasses, int assetIndex) {
 			super(name, domain, parameterClasses);
 			this.assetIndex = assetIndex;
 		}
-	
+
 		@Override
 		public boolean isTrue(State s, String[] params) {
-			return s.getObject(params[0]).getValues().get(assetIndex)
-					.getRealVal() > 0;
+			if (s == null)
+				throw new RuntimeException("null state");
+			ObjectInstance o = s.getFirstObjectOfClass(PORTFOLIO);
+			if (o == null)
+				throw new RuntimeException(PORTFOLIO + " instance not found");
+			List<Value> v = o.getValues();
+			if (v == null)
+				throw new RuntimeException("null value list");
+			if (assetIndex < v.size())
+				return v.get(assetIndex).getDiscVal() > 0;
+			else
+				throw new RuntimeException("not enough values");
 		}
-	
+
 	}
 
 	public class SellAction extends Action {
@@ -63,7 +74,8 @@ public class AssetDomain implements DomainGenerator {
 
 		@Override
 		public boolean applicableInState(State s, String[] params) {
-			PropositionalFunction pf = domain.getPropFunction(PF_IS_HOLDING_ASSET+assetIndex);
+			PropositionalFunction pf = domain
+					.getPropFunction(PF_IS_HOLDING_ASSET + assetIndex);
 			return pf.isTrue(s, params);
 		}
 
@@ -84,7 +96,7 @@ public class AssetDomain implements DomainGenerator {
 		ObjectInstance portfolio = s.getObjectsOfTrueClass(PORTFOLIO).get(0);
 		ObjectInstance market = s.getObjectsOfTrueClass(MARKET).get(0);
 		ObjectInstance cash = s.getObjectsOfTrueClass(CASH).get(0);
-		double quantity = portfolio.getValues().get(assetIndex).getRealVal();
+		double quantity = portfolio.getValues().get(assetIndex).getDiscVal();
 		double price = market.getValues().get(assetIndex).getRealVal();
 		double balance = cash.getValues().get(0).getRealVal();
 		cash.getValues().get(0).setValue(balance + price * quantity);
@@ -109,7 +121,8 @@ public class AssetDomain implements DomainGenerator {
 					+ i, i);
 			domain.addAction(sellAction);
 			PropositionalFunction pf = new AssetDomain.HoldingAssetPF(
-					PF_IS_HOLDING_ASSET + i, domain, new String[] { PORTFOLIO }, i);
+					PF_IS_HOLDING_ASSET + i, domain,
+					new String[] { PORTFOLIO }, i);
 			domain.addPropositionalFunction(pf);
 		}
 		domain.addObjectClass(portfolio);
@@ -120,30 +133,39 @@ public class AssetDomain implements DomainGenerator {
 
 	public State getHoldingAllAssetsState(Domain domain) {
 		State s = new State();
-		ObjectInstance portfolio = new ObjectInstance(domain.getObjectClass(PORTFOLIO),PORTFOLIO+0);
-		for(Value v:portfolio.getValues()) v.setValue(1);
+		ObjectInstance portfolio = new ObjectInstance(
+				domain.getObjectClass(PORTFOLIO), PORTFOLIO + 0);
+		for (Value v : portfolio.getValues())
+			v.setValue(1);
 		s.addObject(portfolio);
-		ObjectInstance market = new ObjectInstance(domain.getObjectClass(MARKET),MARKET+0);
+		ObjectInstance market = new ObjectInstance(
+				domain.getObjectClass(MARKET), MARKET + 0);
 		marketInitialize(market);
 		s.addObject(market);
-		ObjectInstance cash = new ObjectInstance(domain.getObjectClass(CASH),CASH+0);
-		for(Value v:cash.getValues()) v.setValue(0);
+		ObjectInstance cash = new ObjectInstance(domain.getObjectClass(CASH),
+				CASH + 0);
+		for (Value v : cash.getValues())
+			v.setValue(0);
 		s.addObject(cash);
+		System.err.println(s.toString());
+		System.err.println("-----");
 		return s;
 	}
 
 	private void marketInitialize(ObjectInstance market) {
 		Random r = new Random();
-		for(Value v:market.getValues()) v.setValue(r.nextDouble()*10);
+		for (Value v : market.getValues())
+			v.setValue(r.nextDouble() * 10);
 	}
-	
+
 	private void marketUpdate(ObjectInstance market) {
-		for(Value v:market.getValues()) v.setValue(marketUpdate(v));
+		for (Value v : market.getValues())
+			v.setValue(marketUpdate(v));
 	}
 
 	private String marketUpdate(Value v) {
 		Random r = new Random();
-		v.setValue(v.getRealVal()*(1+(r.nextDouble()-0.5)));
+		v.setValue(v.getRealVal() * (1 + (r.nextDouble() - 0.5)));
 		return null;
 	}
 

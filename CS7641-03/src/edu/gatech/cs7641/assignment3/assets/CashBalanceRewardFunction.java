@@ -1,4 +1,4 @@
-package edu.gatech.cs7641.assignment3;
+package edu.gatech.cs7641.assignment3.assets;
 
 import burlap.oomdp.core.State;
 import burlap.oomdp.singleagent.GroundedAction;
