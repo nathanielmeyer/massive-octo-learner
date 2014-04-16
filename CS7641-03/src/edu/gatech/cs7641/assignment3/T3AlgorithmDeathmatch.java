@@ -41,6 +41,12 @@ public class T3AlgorithmDeathmatch {
 		} else {
 			System.out.println("The match ended in a draw.\n");
 		}
+		
+		int delta=0;
+		for (int i=0;i<states.length; i++) {
+			if (pi[i]!=vi[i]) delta++;
+		}
+		System.out.printf("The policies differ by only %d/%d decisions.\n",delta,states.length);
 	}
 	
 	private static T3Board visualizePolicyThroughOptimalGame(String[] states,

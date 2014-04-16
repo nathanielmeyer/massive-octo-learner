@@ -33,13 +33,12 @@ public class T3PolicyIterationExercise {
 			updateUtility(states, policy, utility, random);
 			// Chose a better policy
 			int[] newPolicy = readPolicyFromUtility(states, utility);
-			if (random.nextDouble() < Math.max(1.0 / i,1/100)) {
-				delta = 0;
-				for (int k = 0; k < newPolicy.length; k++)
-					if (newPolicy[k] != policy[k])
-						delta++;
-				System.out.println(i + " policy delta: " + delta);
-			}
+			// Print results
+			delta = 0;
+			for (int k = 0; k < newPolicy.length; k++)
+				if (newPolicy[k] != policy[k])
+					delta++;
+			System.out.println(i + " policy delta: " + delta);
 			policy = newPolicy;
 		}
 		System.out.println("Final policy delta: " + delta);

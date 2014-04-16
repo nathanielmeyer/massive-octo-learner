@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class T3ValueIterationExercise {
@@ -25,12 +26,44 @@ public class T3ValueIterationExercise {
 		initialize(states, utility);
 		Random random = new Random();
 
-		// Estimate values under starting policy
-		updateUtility(states, utility, random);
+		// I compute a policy periodically for comparison to policy iteration.
+		// It isn't used
+		int[] policy = readPolicyFromUtility(states, utility);
+
+		// Estimate values
+		for (int i = 0; i < SAMPLE_SIZE; i++) {
+			train(states, utility, random);
+			int delta;
+			if (i % 10000 == 0) {
+				int[] newPolicy = readPolicyFromUtility(states, utility);
+				// Print results
+				delta = 0;
+				for (int k = 0; k < newPolicy.length; k++)
+					if (newPolicy[k] != policy[k])
+						delta++;
+				System.out.println(i + " policy delta: " + delta);
+				policy = newPolicy;
+			}
+		}
 
 		saveEstimatedUtility(states, utility);
 		visualizePolicyThroughOptimalGame(states, utility);
 
+	}
+
+	private static int[] readPolicyFromUtility(String[] states,
+			double[][] utility) throws IOException {
+		int[] policy = new int[states.length];
+		Arrays.fill(policy, -1);
+		for (int i = 0; i < states.length; i++) {
+			int p = 0;
+			for (int j = 1; j < 9; j++) {
+				if (utility[i][j] > utility[i][p])
+					p = j;
+			}
+			policy[i] = p;
+		}
+		return policy;
 	}
 
 	private static void saveEstimatedUtility(String[] states, double[][] utility)
@@ -58,9 +91,11 @@ public class T3ValueIterationExercise {
 				for (int i = 0; i < 9; i++) {
 					int row = i / 3 + 1;
 					int col = i % 3 + 1;
-					vis.markSpace(row, col,
-							String.format("%d", Math.round(utility[s][i]*9.0))
-							.charAt(0));
+					vis.markSpace(
+							row,
+							col,
+							String.format("%d", Math.round(utility[s][i] * 9.0))
+									.charAt(0));
 				}
 				System.out.println(vis.toGlyph() + "\n");
 			}
@@ -74,21 +109,14 @@ public class T3ValueIterationExercise {
 		System.out.println(game.toGlyph());
 	}
 
-	private static void updateUtility(String[] states, double[][] utility,
-			Random random) {
-		for (int i = 0; i < SAMPLE_SIZE; i++) {
-			train(states, utility, random);
-		}
-	}
-
 	private static void train(String[] states, double[][] utility, Random random) {
 		int s1 = random.nextInt(states.length);
 		int randomAction;
 		do {
 			randomAction = random.nextInt(9);
 		} while (!(states[s1].charAt(randomAction) == T3Board.E));
-		int a1 = (random.nextDouble() > PLAYER_GREED) ? randomAction
-				: policy(s1, states, utility);
+		int a1 = (random.nextDouble() > PLAYER_GREED) ? randomAction : policy(
+				s1, states, utility);
 		T3Board sim = new T3Board(states[s1]);
 		// System.out.println(sim.toGlyph());
 		int row1 = a1 / 3 + 1;
@@ -115,7 +143,7 @@ public class T3ValueIterationExercise {
 				randomAction = random.nextInt(9);
 			} while (!(q.charAt(randomAction) == T3Board.E));
 			int a2 = (random.nextDouble() > OPPONENT_GREED) ? randomAction
-					: policy(s2, states,utility);
+					: policy(s2, states, utility);
 			int row2 = a2 / 3 + 1;
 			int col2 = a2 % 3 + 1;
 			if (!sim.markSpace(row2, col2, T3Board.X))
@@ -157,8 +185,10 @@ public class T3ValueIterationExercise {
 	}
 
 	private static int policy(int state, String[] states, double[][] utility) {
-		int action=0;
-		for (int i=1; i<9; i++) if(utility[state][i]>utility[state][action]) action=i;
+		int action = 0;
+		for (int i = 1; i < 9; i++)
+			if (utility[state][i] > utility[state][action])
+				action = i;
 		return action;
 	}
 
