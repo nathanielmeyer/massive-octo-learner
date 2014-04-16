@@ -16,7 +16,7 @@ public class T3ValueIterationExercise {
 	private static final int SAMPLE_SIZE = 10000000;
 	private static final double PLAYER_GREED = .8;
 	private static final double OPPONENT_GREED = .8;
-	private static final double GAMMA = 0.8;
+	private static final double GAMMA = 0.1;
 
 	public static void main(String[] args) throws FileNotFoundException,
 			IOException {
@@ -59,8 +59,8 @@ public class T3ValueIterationExercise {
 					int row = i / 3 + 1;
 					int col = i % 3 + 1;
 					vis.markSpace(row, col,
-							String.format("%1.0f", (utility[s][i]) * 9.0)
-									.charAt(0));
+							String.format("%d", Math.round(utility[s][i]*9.0))
+							.charAt(0));
 				}
 				System.out.println(vis.toGlyph() + "\n");
 			}

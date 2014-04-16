@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class T3PolicyIterationExercise {
@@ -13,11 +14,11 @@ public class T3PolicyIterationExercise {
 	private static final double WIN = 1;
 	private static final double LOSE = -1;
 	private static final double DRAW = 0;
-	private static final int SAMPLE_SIZE = 100000;
+	private static final int SAMPLE_SIZE = 10000;
 	private static final double PLAYER_GREED = .8;
 	private static final double OPPONENT_GREED = .8;
-	private static final double GAMMA = 0.8;
-	private static final int MAX_ITERATIONS = 100;
+	private static final double GAMMA = 0.1;
+	private static final int MAX_ITERATIONS = 1000;
 
 	public static void main(String[] args) throws IOException {
 		String[] states = loadStates();
@@ -26,58 +27,65 @@ public class T3PolicyIterationExercise {
 		initialize(states, policy, utility);
 		Random random = new Random();
 
-		// Estimate values under starting policy
-		updateUtility(states, policy, utility, random);
-
-		for (int i = 0; i < MAX_ITERATIONS; i++)
-			iterate(states, policy, utility, random);
+		int delta = 0;
+		for (int i = 0; i < MAX_ITERATIONS; i++) {
+			// Estimate values
+			updateUtility(states, policy, utility, random);
+			// Chose a better policy
+			int[] newPolicy = readPolicyFromUtility(states, utility);
+			if (random.nextDouble() < Math.max(1.0 / i,1/100)) {
+				delta = 0;
+				for (int k = 0; k < newPolicy.length; k++)
+					if (newPolicy[k] != policy[k])
+						delta++;
+				System.out.println(i + " policy delta: " + delta);
+			}
+			policy = newPolicy;
+		}
+		System.out.println("Final policy delta: " + delta);
 
 		visualizePolicyThroughOptimalGame(states, policy, utility);
-		
-		saveOptimalPolicy(states,policy);
-		saveEstimatedUtility(states,utility);
+
+		saveOptimalPolicy(states, policy);
+		saveEstimatedUtility(states, utility);
 	}
 
-	private static void saveEstimatedUtility(String[] states, double[][] utility) throws IOException {
+	private static void saveEstimatedUtility(String[] states, double[][] utility)
+			throws IOException {
 		FileWriter out = new FileWriter("output/t3utility.pi.csv");
-		for (int i=0;i<states.length; i++) {
-			for (int j=0;j<9;j++) {
-				out.write(String.format("\"%s\",%d,%1.2f\n",states[i],j,utility[i][j]));
-			}
-		}
-		out.close();
-	}
-
-	private static void saveOptimalPolicy(String[] states, int[] policy) throws IOException {
-		FileWriter out = new FileWriter("output/t3policy.pi.csv");
-		for (int i=0;i<states.length; i++) {
-			for (int j=0;j<9;j++) {
-				out.write(String.format("\"%s\",%d\n",states[i],policy[i]));
-			}
-		}
-		out.close();
-	}
-
-	private static void iterate(String[] states, int[] policy,
-			double[][] utility, Random random) {
-		// Improve policy
-		int[] newPolicy = new int[policy.length];
-		int diff = 0;
 		for (int i = 0; i < states.length; i++) {
-			int argmax = 0;
-			for (int j = 1; j < 9; j++) {
-				if (utility[i][j] > utility[i][argmax])
-					argmax = j;
+			for (int j = 0; j < 9; j++) {
+				out.write(String.format("\"%s\",%d,%1.2f\n", states[i], j,
+						utility[i][j]));
 			}
-			newPolicy[i] = argmax;
-			if (policy[i] != newPolicy[i])
-				diff++;
 		}
-		policy = newPolicy;
-		System.out.println("New policy delta: " + diff);
-		// Estimate values
-		updateUtility(states, policy, utility, random);
+		out.close();
+	}
 
+	private static void saveOptimalPolicy(String[] states, int[] policy)
+			throws IOException {
+		FileWriter out = new FileWriter("output/t3policy.pi.csv");
+		for (int i = 0; i < states.length; i++) {
+			for (int j = 0; j < 9; j++) {
+				out.write(String.format("\"%s\",%d\n", states[i], policy[i]));
+			}
+		}
+		out.close();
+	}
+
+	private static int[] readPolicyFromUtility(String[] states,
+			double[][] utility) throws IOException {
+		int[] policy = new int[states.length];
+		Arrays.fill(policy, -1);
+		for (int i = 0; i < states.length; i++) {
+			int p = 0;
+			for (int j = 1; j < 9; j++) {
+				if (utility[i][j] > utility[i][p])
+					p = j;
+			}
+			policy[i] = p;
+		}
+		return policy;
 	}
 
 	private static void visualizePolicyThroughOptimalGame(String[] states,
@@ -93,8 +101,10 @@ public class T3PolicyIterationExercise {
 				for (int i = 0; i < 9; i++) {
 					int row = i / 3 + 1;
 					int col = i % 3 + 1;
-					vis.markSpace(row, col,
-							String.format("%1.0f", (utility[s][i])*9.0)
+					vis.markSpace(
+							row,
+							col,
+							String.format("%d", Math.round(utility[s][i] * 9.0))
 									.charAt(0));
 				}
 				System.out.println(vis.toGlyph() + "\n");
